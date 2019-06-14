@@ -3,7 +3,7 @@ import csv
 import gzip
 import mercantile
 import multiprocessing
-import os
+import os,sys
 import random
 import requests
 import signal
@@ -30,7 +30,8 @@ def fetch_tile(format_args):
         raise ShutdownException("Shutdown event set")
 
     while True:
-        url = '{url_prefix}/{type}/v1/{size}/{layer}/{zoom}/{x}/{y}.{fmt}'.format(**format_args)
+        # url = '{url_prefix}/{type}/v1/{size}/{layer}/{zoom}/{x}/{y}.{fmt}'.format(**format_args)
+        url = '{url_prefix}/{zoom}/{x}/{y}.{fmt}'.format(**format_args)
 
         api_key = format_args.get('api_key')
         if api_key:
@@ -55,28 +56,31 @@ def fetch_tile(format_args):
 
             resp.raise_for_status()
             return (format_args, response_info, data)
-        except requests.exceptions.RequestException as e:
-            if isinstance(e, requests.exceptions.HTTPError):
-                if e.response.status_code == 404:
-                    if verbose:
-                        print("HTTP {} -- {} while retrieving {}. Not trying again.".format(
-                            e.response.status_code, e.response.text.strip(), url)
-                        )
-                    return (format_args, response_info, None)
-                else:
-                    print("HTTP {} -- {} while retrieving {}, retrying after {:0.2f} sec".format(
-                        e.response.status_code, e.response.text.strip(), url, sleep_time)
-                    )
-            else:
-                print("{} while retrieving {}, retrying after {:0.2f} sec".format(
-                    type(e), url, sleep_time)
-                )
-            time.sleep(sleep_time)
-            sleep_time = min(sleep_time * 2.0, 30.0) * random.uniform(1.0, 1.7)
-        except Exception as e:
-            print("Ran into an unexpected exception: {}".format(e))
-            traceback.print_tb()
-            raise
+        # except requests.exceptions.RequestException as e:
+        #     if isinstance(e, requests.exceptions.HTTPError):
+        #         if e.response.status_code == 404:
+        #             if verbose:
+        #                 print("HTTP {} -- {} while retrieving {}. Not trying again.".format(
+        #                     e.response.status_code, e.response.text.strip(), url)
+        #                 )
+        #             return (format_args, response_info, None)
+        #         else:
+        #             print("HTTP {} -- {} while retrieving {}, retrying after {:0.2f} sec".format(
+        #                 e.response.status_code, e.response.text.strip(), url, sleep_time)
+        #             )
+        #     else:
+        #         print("{} while retrieving {}, retrying after {:0.2f} sec".format(
+        #             type(e), url, sleep_time)
+        #         )
+        #     time.sleep(sleep_time)
+        #     sleep_time = min(sleep_time * 2.0, 30.0) * random.uniform(1.0, 1.7)
+        # except Exception as e:
+        #     print("Ran into an unexpected exception: {}".format(e))
+        #     traceback.print_tb()
+        #     raise
+        except :
+            print("trying url {0} but {1} occured".format(url,sys.exc_info()[0]))
+            break 
 
 output_type_mapping = {
     'mbtiles': tilepack.outputter.MbtilesOutput,
@@ -161,8 +165,9 @@ def build_tile_packages(min_lon, min_lat, max_lon, max_lat, min_zoom, max_zoom,
                     ((tiles_written + tiles_errored) / float(tiles_to_get)) * 100.0,
                     output
                 ))
-    except ShutdownException:
-        print("Workers shut down")
+    except :
+        # print("Workers shut down")
+        print("{0} occured".format(sys.exc_info()[0]))
 
     p.close()
     p.join()
@@ -239,7 +244,7 @@ def main():
     args = parser.parse_args()
 
     api_key = os.environ.get('MAPZEN_API_KEY')
-    url_prefix = os.environ.get('MAPZEN_URL_PREFIX') or "https://tile.mapzen.com/mapzen"
+    url_prefix = os.environ.get('MAPZEN_URL_PREFIX') or "http://localhost:8000/all"
 
     output_formats = args.output_formats.split(',')
     build_tile_packages(
