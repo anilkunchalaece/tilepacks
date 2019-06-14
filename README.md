@@ -44,9 +44,13 @@ Tools to build tile packages meant for offline usage.
    
    Note that tiles above zoom 15 do not have any additional data or resolution already in a z15 tiles, so downloading 17 and 18 may be unnecessary. (If you're using Tangram, it begins overzooming at z16).
 
-##Mofications I did
+## Mofications I did
+
+
 Changed the url to localhost
+
 removed the infinite loop to fetch the tile if exceton occured
+
 stared tile server with following command 
-gunicorn -w 8 "tileserver:wsgi_server('config.yaml')" --log-level debug
+   gunicorn -w 8 "tileserver:wsgi_server('config.yaml')" --log-level debug
 
